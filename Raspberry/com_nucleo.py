@@ -1,29 +1,27 @@
 import serial
-import mysql.connector
+import datetime
+import time
+import requests
 
-def add_to_database(temp, date):
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="username",
-        password="password",
-        database="dbname"
-    )
-    mycursor = mydb.cursor().
-    sql = "INSERT INTO projekti VALUES (NULL, %s, %s)"
-    val = (temp, date)
-    mycursor.execute(sql, val)
-    mydb.commit()
-    print(mycursor.rowcount, "inserted")  
-
-def main():
-    # Check whats your port and update the line
-    ser = serial.Serial('/dev/ttyUSB1', 9600)
-    s = [0]
-    while True:
-        read_serial = ser.readline()
-        s[0] = str(int (ser.readline(), 16))
-        print(s[0])
-        print(read_serial)
+def update_database(temp, date):
+    URL = "http://192.168.0.11:3000/api/post"
+    print("Ok")
+    data = {"temperature":temp, "date":date}
+    r = requests.post(url = URL, data = data)
+    print("Temperature " + temp + " posted to database on " + date)
+    time.sleep(60)    
 
 if __name__ == '__main__':
-    main()
+    seri = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
+    seri.flush()
+    # Edit this to choose a minute to send data to the database
+    m = 42
+
+    while True:
+        today = datetime.datetime.now()
+        if seri.in_waiting > 0:
+            line = seri.readline().decode('utf-8').rstrip()
+            d2 = today.strftime("%Y-%m-%d")
+            if today.minute == m:
+                update_database(line, d2)
+
